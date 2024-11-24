@@ -1,5 +1,8 @@
 from pydantic import BaseModel 
 import json
+import random
+import string
+
 
 class Details(BaseModel):
     event_id: str
@@ -32,4 +35,9 @@ class Participant(BaseModel):
     def name_completed(self):
         return self.first_name + " " + self.last_name
         
+        
+    def generate_code_validation(self):
+        #  validation_code você gera um hexadecimal de 9 caracteres 
+        validation_code = ''.join(random.choices(string.hexdigits, k=9))
+        return validation_code
         

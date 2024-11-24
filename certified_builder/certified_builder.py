@@ -11,20 +11,23 @@ class CertifiedBuilder:
     def build_certificates(self):
         participants = self.events_api.fetch_participants()
 
-        for participant in participants:
-            print(f"Gerando certificado para {participant.name_completed()}")
-            
             # Fetch certificate template par o participante atual e o evento para o qual ele está inscrito
-            certificate_template = self.events_api.fetch_file_certificate()
+        certificate_template = self.events_api.fetch_file_certificate()
+        
+        for participant in participants:
+            print(f"Gerando certificado para {participant.name_completed()}")    
             
-            self.generate_certificate(participant, certificate_template.copy())
+            certificate_generated = self.generate_certificate(participant, certificate_template.copy())
+            
+            self.save_certificate(certificate_generated, participant)
+            
+            
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):
         name_image = self.create_name_image(participant.name_completed(), certificate_template.size)
         certificate_template.paste(name_image, (0, 0), name_image)
         certificate_template.save(f"certificates/{participant.name_completed()}.png")
-        print (f"Certificado gerado para {participant.name_completed()} e salvo em certificates/{participant.name_completed()}.png")
-        
+        return certificate_template
 
     def create_name_image(self, name: str, size: tuple) -> Image:
         name_image = Image.new("RGBA", size, (255, 255, 255, 0))
@@ -40,3 +43,10 @@ class CertifiedBuilder:
         text_height = text_bbox[3] - text_bbox[1]
         position = ((size[0] - text_width) / 2, (size[1] - text_height) / 2)
         return position
+
+    
+    def save_certificate(self, certificate: Image, participant: Participant):
+        image_buffer = BytesIO()
+        certificate.save(image_buffer, format="PNG")
+        image_buffer.seek(0)        
+        self.events_api.save_certificate(image_buffer, participant)

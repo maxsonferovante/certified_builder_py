@@ -23,6 +23,8 @@ class CertifiedBuilder:
         name_image = self.create_name_image(participant.name_completed(), certificate_template.size)
         certificate_template.paste(name_image, (0, 0), name_image)
         certificate_template.save(f"certificates/{participant.name_completed()}.png")
+        print (f"Certificado gerado para {participant.name_completed()} e salvo em certificates/{participant.name_completed()}.png")
+        
 
     def create_name_image(self, name: str, size: tuple) -> Image:
         name_image = Image.new("RGBA", size, (255, 255, 255, 0))

@@ -1,4 +1,5 @@
-from pydantic import BaseModel 
+from pydantic import BaseModel, Field
+from typing import Optional
 import json
 import random
 import string
@@ -22,22 +23,18 @@ class Participant(BaseModel):
     last_update: str
     last_checkin: str
     opt_in: str
+    validation_code: Optional[str] = Field(default_factory= lambda: ''.join(random.choices(string.hexdigits, k=9)), init=False)
         
     def __init__(self, **data):        
         if isinstance(data['details'], str):
             data["details"] = [
                 Details(**item) for item in json.loads(data["details"])
             ]
+
         super().__init__(**data)
         
         
     # criar metodo name_completed
     def name_completed(self):
         return self.first_name + " " + self.last_name
-        
-        
-    def generate_code_validation(self):
-        #  validation_code você gera um hexadecimal de 9 caracteres 
-        validation_code = ''.join(random.choices(string.hexdigits, k=9))
-        return validation_code
-        
+                

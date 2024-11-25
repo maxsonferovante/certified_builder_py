@@ -28,13 +28,12 @@ class CertifiedBuilder:
         validation_code_image = self.create_validation_code_image(participant.validation_code, certificate_template.size)        
         name_image.paste(validation_code_image, (0, 0), validation_code_image)
         certificate_template.paste(name_image, (0, 0), name_image)        
-        certificate_template.save(f"certificates/{participant.name_completed()}_{participant.validation_code}.png")        
         return certificate_template
 
     def create_name_image(self, name: str, size: tuple) -> Image:
         name_image = Image.new("RGBA", size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(name_image)
-        font = ImageFont.truetype(FONT_NAME, 60)
+        font = ImageFont.truetype(FONT_NAME, 70)
         position = self.calculate_text_position(name, font, draw, size)
         draw.text(position, name, fill=(0, 0, 0), align="center", font=font)
         return name_image
@@ -43,7 +42,7 @@ class CertifiedBuilder:
         text_bbox = draw.textbbox((0, 0), text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
-        position = ((size[0] - text_width) / 2, (size[1] - text_height + 40) / 2)
+        position = ((size[0] - text_width) / 2, (size[1] - text_height) / 2)
         return position
 
 
@@ -62,7 +61,9 @@ class CertifiedBuilder:
         position = (size[0] - text_width - 60, size[1] - text_height - 40)        
         return position
     
-    def save_certificate(self, certificate: Image, participant: Participant):
+    def save_certificate(self, certificate: Image, participant: Participant):                    
+        certificate.save(f"certificates/{participant.name_completed()}_{participant.validation_code}.png")        
+            
         image_buffer = BytesIO()
         certificate.save(image_buffer, format="PNG")
         image_buffer.seek(0)        

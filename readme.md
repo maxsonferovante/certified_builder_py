@@ -2,6 +2,9 @@
 
 Este projeto é um sistema de geração automática de certificados personalizados para participantes de eventos, utilizando **Python**, **Pillow**, **httpx** e uma integração com uma API externa. Agora, além de gerar os certificados localmente, ele envia os certificados gerados diretamente para um endpoint remoto.
 
+
+[![Continuos Integration -Testing - Certified Builder Py](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml)
+
 ---
 
 ### Estrutura do Projeto

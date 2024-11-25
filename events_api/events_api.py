@@ -31,21 +31,24 @@ class EventsAPI:
     
     
     def save_certificate(self, image_buffer: BytesIO, participant: Participant):        
-        url_save_certificate = "https://python.floripa.br/wp-json/event/v1/upload"
-        data = {
-            "validation_code": participant.validation_code,
-            "first_name": participant.first_name,
-            "last_name": participant.last_name,
-            "email": participant.email,
-            "event_id": participant.details[0].event_id,
-            "event_date": participant.details[0].last_checkin,
-        }
-        name_image = participant.name_completed() +"_"+data["event_id"] + "_" + data["event_date"] + "_" + data["validation_code"] + ".png"
-        files = {
-            "certificate_image": (
-                name_image, image_buffer, "image/png"
-            )
-        }
-        # response = httpx.post(url_save_certificate, data=data, files=files)
-        # print(response.json())
+        try:
+            url_save_certificate = "https://python.floripa.br/wp-json/event/v1/upload"
+            data = {
+                "validation_code": participant.validation_code,
+                "first_name": participant.first_name,
+                "last_name": participant.last_name,
+                "email": participant.email,
+                "event_id": participant.details[0].event_id,
+                "event_date": participant.details[0].last_checkin,
+            }
+            name_image = participant.name_completed() +"_"+data["event_id"] + "_" + data["event_date"] + "_" + data["validation_code"] + ".png"
+            files = {
+                "certificate_image": (
+                    name_image, image_buffer, "image/png"
+                )
+            }
+            response = httpx.post(url_save_certificate, data=data, files=files)
+            print(response.json())
+        except Exception as e:
+            print("Tivemos um erro ao salvar o certificado na API:", e)
         

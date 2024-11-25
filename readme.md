@@ -19,9 +19,11 @@ O projeto contém os seguintes componentes principais:
    - Gera certificados personalizados para cada participante.
    - Realiza o upload dos certificados gerados para a API.
 
-4. **Pasta de Fontes** (`fonts/static/OpenSans-Regular.ttf`): Fonte usada para escrever o nome no certificado.
+4. **Pasta de Fontes** (`fonts/static/Chakra_Petch`): Fonte usada para escrever o nome no certificado.
 
-5. **Pasta de Saída** (`certificates/`): Certificados gerados localmente.
+5. **Pasta de Fontes** (`fonts/static/Pinyon_Script`): Fonte usada para escrever o codigo de validação.
+
+6. **Pasta de Saída** (`certificates/`): Certificados gerados localmente.
 
 ---
 

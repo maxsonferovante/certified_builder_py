@@ -18,10 +18,9 @@ class CertifiedBuilder:
         certificate_template = self.events_api.fetch_file_certificate()
         
         for participant in participants:
-            print(f"Gerando certificado para {participant.name_completed()}")                
             certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
             self.save_certificate(certificate_generated, participant)
-            
+            print (f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.validation_code}")
             
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):        
@@ -29,8 +28,7 @@ class CertifiedBuilder:
         validation_code_image = self.create_validation_code_image(participant.validation_code, certificate_template.size)        
         name_image.paste(validation_code_image, (0, 0), validation_code_image)
         certificate_template.paste(name_image, (0, 0), name_image)        
-        # certificate_template.save(f"certificates/{participant.name_completed()}_{participant.validation_code}.png")
-        certificate_template.save(f"certificates/{participant.name_completed()}.png")
+        certificate_template.save(f"certificates/{participant.name_completed()}_{participant.validation_code}.png")        
         return certificate_template
 
     def create_name_image(self, name: str, size: tuple) -> Image:

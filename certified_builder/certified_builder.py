@@ -6,7 +6,7 @@ from io import BytesIO
 
 
 FONT_NAME="certified_builder/fonts/PinyonScript/PinyonScript-Regular.ttf"
-VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-Regular.ttf"
+VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-SemiBold.ttf"
 
 class CertifiedBuilder:
     def __init__(self, events_api: EventsAPI):
@@ -49,6 +49,7 @@ class CertifiedBuilder:
     def create_validation_code_image(self, validation_code: str, size: tuple) -> Image:
         validation_code_image = Image.new("RGBA", size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(validation_code_image)
+        # . Aplicar um peso de fonte maior (talvez 600), também para facilitar a leitura.
         font = ImageFont.truetype(VALIDATION_CODE, 20)        
         position = self.calculate_validation_code_position(validation_code, font, draw, size)        
         draw.text(position, validation_code, fill=(0, 0, 0), align="center", font=font)

@@ -38,3 +38,6 @@ class Participant(BaseModel):
     def name_completed(self):
         return self.first_name + " " + self.last_name
                 
+
+    def formated_validation_code(self):
+        return f"{self.validation_code[0:3]}-{self.validation_code[3:6]}-{self.validation_code[6:9]}"

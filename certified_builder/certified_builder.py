@@ -20,12 +20,12 @@ class CertifiedBuilder:
         for participant in participants:
             certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
             self.save_certificate(certificate_generated, participant)
-            print (f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.validation_code}")
+            print (f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
             
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):        
         name_image = self.create_name_image(participant.name_completed(), certificate_template.size)        
-        validation_code_image = self.create_validation_code_image(participant.validation_code, certificate_template.size)        
+        validation_code_image = self.create_validation_code_image(participant.formated_validation_code(), certificate_template.size)        
         name_image.paste(validation_code_image, (0, 0), validation_code_image)
         certificate_template.paste(name_image, (0, 0), name_image)        
         return certificate_template
@@ -58,11 +58,11 @@ class CertifiedBuilder:
         text_bbox = draw.textbbox((0, 0), validation_code, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
-        position = (size[0] - text_width - 60, size[1] - text_height - 40)        
+        position = (size[0] - text_width - 50, size[1] - text_height - 40)        
         return position
     
     def save_certificate(self, certificate: Image, participant: Participant):                    
-        certificate.save(f"certificates/{participant.name_completed()}_{participant.validation_code}.png")        
+        certificate.save(f"certificates/{participant.name_completed()}_{participant.formated_validation_code()}.png")        
             
         image_buffer = BytesIO()
         certificate.save(image_buffer, format="PNG")

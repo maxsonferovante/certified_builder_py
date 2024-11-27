@@ -50,4 +50,5 @@ class Participant(BaseModel):
                 
 
     def formated_validation_code(self):
+        self.validation_code = self.validation_code.upper()
         return f"{self.validation_code[0:3]}-{self.validation_code[3:6]}-{self.validation_code[6:9]}"

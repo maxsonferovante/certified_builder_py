@@ -36,7 +36,17 @@ class Participant(BaseModel):
         
     # criar metodo name_completed
     def name_completed(self):
-        return self.first_name + " " + self.last_name
+        self.first_name = self.first_name.lower()
+        self.last_name = self.last_name.lower()
+        
+        name_completed = self.first_name + " " + self.last_name
+        if len(name_completed.split(" ")) > 3:
+            self.first_name = name_completed.split()[0]
+            self.last_name = name_completed.split()[1] + " " + name_completed.split()[-1]
+            name_completed = self.first_name + " " + self.last_name
+        
+        return name_completed.capitalize()
+    
                 
 
     def formated_validation_code(self):

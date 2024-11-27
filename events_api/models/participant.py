@@ -45,7 +45,7 @@ class Participant(BaseModel):
             self.last_name = name_completed.split()[1] + " " + name_completed.split()[-1]
             name_completed = self.first_name + " " + self.last_name
         
-        return name_completed.capitalize()
+        return name_completed.title()
     
                 
 

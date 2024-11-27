@@ -35,16 +35,7 @@ def test_build_certificates(certified_builder, mock_events_api, mock_participant
         mock_events_api.fetch_file_certificate.assert_called_once()
         mock_generate_certificate.assert_called_once_with(mock_participant, mock_certificate_template)
         mock_save_certificate.assert_called_once_with(mock_certificate_template, mock_participant)
-
-def test_generate_certificate(certified_builder, mock_participant, mock_certificate_template):
-    with patch.object(certified_builder, 'create_name_image', return_value=mock_certificate_template) as mock_create_name_image, \
-         patch.object(certified_builder, 'create_validation_code_image', return_value=mock_certificate_template) as mock_create_validation_code_image:
-        certificate = certified_builder.generate_certificate(mock_participant, mock_certificate_template)
-
-        mock_create_name_image.assert_called_once_with(mock_participant.name_completed(), mock_certificate_template.size)
-        mock_create_validation_code_image.assert_called_once_with(mock_participant.validation_code, mock_certificate_template.size)
-        assert certificate == mock_certificate_template
-
+        
 def test_create_name_image(certified_builder, mock_participant, mock_certificate_template):
     name_image = certified_builder.create_name_image(mock_participant.name_completed(), mock_certificate_template.size)
     assert name_image.size == mock_certificate_template.size

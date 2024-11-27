@@ -137,3 +137,48 @@ def test_invalid_phone_number():
 
     with pytest.raises(ValueError):
         Participant(**participant_data)
+
+
+def test_title_name_completed():
+    participant_data = {
+        "id": "123",
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@example.com",
+        "phone": "1234567890",
+        "cpf": "12345678901",
+        "dob": "1990-01-01",
+        "city": "New York",
+        "details": [],
+        "created_date": "2023-01-01",
+        "last_update": "2023-01-01",
+        "last_checkin": "2023-01-01",
+        "opt_in": "yes"
+    }
+
+    participant = Participant(**participant_data)
+    assert participant.name_completed() == "John Doe"
+
+
+def test_name_completed_length_three():
+    participant_data = {
+        "id": "123",
+        "first_name": "John Doe",
+        "last_name": "Asthma Attack",
+        "email": "john.doe@example.com",
+        "phone": "1234567890",
+        "cpf": "12345678901",
+        "dob": "1990-01-01",
+        "city": "New York",
+        "details": [],
+        "created_date": "2023-01-01",
+        "last_update": "2023-01-01",
+        "last_checkin": "2023-01-01",
+        "opt_in": "yes"
+    }
+
+    participant = Participant(**participant_data)
+    assert participant.name_completed().split(" ").__len__() == 3
+    assert participant.name_completed().split(" ") == ["John", "Doe", "Attack"]
+    
+    

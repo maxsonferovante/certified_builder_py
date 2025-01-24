@@ -1,3 +1,4 @@
+import logging
 from events_api.events_api import EventsAPI
 from events_api.models.participant import Participant
 
@@ -7,6 +8,8 @@ from io import BytesIO
 
 FONT_NAME="certified_builder/fonts/PinyonScript/PinyonScript-Regular.ttf"
 VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-SemiBold.ttf"
+
+logger = logging.getLogger(__name__)
 
 class CertifiedBuilder:
     def __init__(self, events_api: EventsAPI):
@@ -20,7 +23,7 @@ class CertifiedBuilder:
         for participant in participants:
             certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
             self.save_certificate(certificate_generated, participant)
-            print (f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
+            logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
             
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):        

@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 try:
     logger.info("Iniciando geração de certificados")
-    certified_builder = CertifiedBuilder(EventsAPI())
+    
+    events_api = EventsAPI(url_file_certificate='https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png', 
+                           event_start='2025-02-22 13:29:00', event_end='2025-02-22 18:30:00')
+
+    
+    certified_builder = CertifiedBuilder(events_api=events_api)
     
     certified_builder.build_certificates()
     

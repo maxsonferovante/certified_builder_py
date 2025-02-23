@@ -30,14 +30,11 @@ class EventsAPI:
             participant_new = Participant(**item)
             participant_new.filter_last_checkin(self.event_start, self.event_end)
             
-            if len(participant_new.details) > 0:                
-                if participant_new.last_name == 'Caitano' or participant_new.last_name == 'Ferreira Caetano':
-                    continue
-
+            if participant_new.details.__len__() > 0 and participant_new.details[0].event_id != '':
                 logger.info(
                     participant_new
                 )
-                self.list_participants.append(participant_new)            
+                self.list_participants.append(participant_new)        
 
         logger.info(f"Total de participantes filtrados: {len(self.list_participants)}")        
         return self.list_participants

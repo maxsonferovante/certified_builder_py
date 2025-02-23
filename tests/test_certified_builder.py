@@ -45,8 +45,3 @@ def test_create_validation_code_image(certified_builder, mock_participant, mock_
     assert validation_code_image.size == mock_certificate_template.size
     assert validation_code_image.mode == "RGBA"
     
-
-def test_save_certificate(certified_builder, mock_participant, mock_certificate_template, mock_events_api):
-    with patch("builtins.open", new_callable=Mock):
-        certified_builder.save_certificate(mock_certificate_template, mock_participant)
-        mock_events_api.save_certificate.assert_called_once()

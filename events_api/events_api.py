@@ -20,7 +20,7 @@ class EventsAPI:
     
     def fetch_participants(self) -> List[Participant]:
         url_participants = "https://python.floripa.br/wp-json/custom/v1/event_checkin"
-        response = httpx.get(url_participants)        
+        response = httpx.get(url_participants, timeout=30)        
         data = response.json()        
         
         logger.info(f"Total de participantes recebidos: {len(data)}")
@@ -39,7 +39,7 @@ class EventsAPI:
     
     def fetch_file_certificate(self,) -> Image:
         url_certificate= self.url_file_certificate
-        response = httpx.get(url_certificate)
+        response = httpx.get(url_certificate, timeout=30)
         img = Image.open(BytesIO(response.content))
         img.save("certificate_models.png")
         return img

@@ -18,10 +18,16 @@ class EventsAPI:
         self.event_start = event_start
         self.event_end = event_end        
     
+    def request_certificate(self, url_participants) -> None:
+        with httpx.Client(limits=httpx.Limits(max_connections=5)) as client:
+            response = client.get(url_participants, timeout=30)
+            response.raise_for_status()
+            return response.json()
+    
     def fetch_participants(self) -> List[Participant]:
         url_participants = "https://python.floripa.br/wp-json/custom/v1/event_checkin"
-        response = httpx.get(url_participants, timeout=30)        
-        data = response.json()        
+        
+        data = self.request_certificate(url_participants)        
         
         logger.info(f"Total de participantes recebidos: {len(data)}")
         for item in data:                        

@@ -166,6 +166,35 @@ project_root/
 ├── README.md                   # Documentação do projeto
 ```
 
+
+## Estrutura de Dados
+
+### Entrada (SQS Message)
+
+```json
+{
+  "event_end": "2025-02-22 18:30:00",
+  "event_start": "2025-02-22 13:29:00",
+  "url_file_certificate": "https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png"
+}
+```
+
+### Testes Locais
+
+Para criar a lambda localmente usando Docker:
+
+```
+docker compose up --build --watch
+```
+
+Para testar localmente usando o runtime da AWS Lambda:
+
+```bash
+curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"Records": [{"body": "{\"event_end\": \"2025-02-22 18:30:00\", \"event_start\": \"2025-02-22 13:29:00\", \"url_file_certificate\": \"https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png\"}"}]}'
+```
+
+Isso simula uma invocação da função Lambda em ambiente local.
+
 ---
 
 ### Conclusão

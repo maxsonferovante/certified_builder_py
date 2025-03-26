@@ -1,10 +1,9 @@
 import logging
 from events_api.events_api import EventsAPI
 from events_api.models.participant import Participant
-
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-import os
+
 
 FONT_NAME="certified_builder/fonts/PinyonScript/PinyonScript-Regular.ttf"
 VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-SemiBold.ttf"

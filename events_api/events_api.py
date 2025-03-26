@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 from typing import List
 from .models.participant import Participant
 

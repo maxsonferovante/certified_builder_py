@@ -27,9 +27,6 @@ def extract_data_body(event):
 
 
 
-
-""" url_file_certificate='https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png', 
-                            event_start='2025-02-22 13:29:00', event_end='2025-02-22 18:30:00' """
 def lambda_handler(event, context):
     body = extract_data_body(event)
     url_file_certificate = body['url_file_certificate']

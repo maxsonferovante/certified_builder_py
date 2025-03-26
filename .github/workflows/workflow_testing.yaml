@@ -1,8 +1,5 @@
 name: Continuos Integration -Testing - Certified Builder Py
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main

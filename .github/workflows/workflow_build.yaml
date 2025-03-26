@@ -1,4 +1,4 @@
-name: Publish Image Docker to AWS ECR
+name: Publish Docker Image to AWS ECR
 
 on:
   workflow_dispatch:

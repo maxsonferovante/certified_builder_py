@@ -1,4 +1,4 @@
-name: Continuos Integration -Testing - Certified Builder Py
+name: Continuous Integration -Testing - Certified Builder Py
 on:
   pull_request:
     branches:
@@ -6,7 +6,7 @@ on:
 
 jobs:
  test:
-    name: Continuos Integration - Testing - Certified Builder Py
+    name: Continuous Integration - Testing - Certified Builder Py
     runs-on: ubuntu-latest
     environment: certified-builder-py
     steps:

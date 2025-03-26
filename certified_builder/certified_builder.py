@@ -15,24 +15,15 @@ class CertifiedBuilder:
     def __init__(self, events_api: EventsAPI):
         self.events_api = events_api
 
-    def exist(self, name_participant: str):
-        for name in os.listdir("certificates"):
-            if name_participant.replace(" ", "_") in name:
-                return True
-        return False
-
     def build_certificates(self):
         participants = self.events_api.fetch_participants()
         # Fetch certificate template par o participante atual e o evento para o qual ele está inscrito
         certificate_template = self.events_api.fetch_file_certificate()
         
         for participant in participants:
-            if not self.exist(participant.name_completed()):
-                certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
-                self.save_certificate(certificate_generated, participant)
-                logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
-            else:
-                logger.info(f"Certificado já gerado para {participant.name_completed()}")
+            certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
+            self.save_certificate(certificate_generated, participant)
+            logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):        
         name_image = self.create_name_image(participant.name_completed(), certificate_template.size)        
@@ -74,10 +65,7 @@ class CertifiedBuilder:
     
     def save_certificate(self, certificate: Image, participant: Participant):                    
         # o nome da imagem terá o id do evento, a data do evento e o código de validação e o nome do participante, sem acentos e em maiúsculas, separados por underline
-        name_certificate = participant.create_name_certificate()
-
-        certificate.save(f"certificates/{name_certificate}")            
-            
+        name_certificate = participant.create_name_certificate()            
         image_buffer = BytesIO()
         certificate.save(image_buffer, format="PNG")
         image_buffer.seek(0)        

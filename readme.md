@@ -5,6 +5,7 @@ Este projeto é um sistema de geração automática de certificados personalizad
 
 [![Continuos Integration -Testing - Certified Builder Py](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml)
 
+[![Publish Docker image in Docker Hub](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml)
 ---
 
 ### Estrutura do Projeto

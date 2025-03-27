@@ -1,204 +1,138 @@
-## Certificado Automático com Python: Gerador de Certificados
+# Certified Builder Py
 
-Este projeto é um sistema de geração automática de certificados personalizados para participantes de eventos, utilizando **Python**, **Pillow**, **httpx** e uma integração com uma API externa. Agora, além de gerar os certificados localmente, ele envia os certificados gerados diretamente para um endpoint remoto.
-
+Sistema de geração automática de certificados para eventos usando AWS Lambda e Docker. O projeto gera certificados personalizados para participantes de eventos, processando mensagens do SQS e utilizando templates predefinidos.
 
 [![Continuos Integration -Testing - Certified Builder Py](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_testing.yaml)
 
-[![Publish Docker image in Docker Hub](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml)
----
+[![Publish Docker image to AWS ECR Private](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml/badge.svg)](https://github.com/maxsonferovante/certified_builder_py/actions/workflows/workflow_build.yaml)
 
-### Estrutura do Projeto
+## Funcionalidades
 
-O projeto contém os seguintes componentes principais:
+- Geração de certificados personalizados com:
+  - Nome do participante em fonte estilizada
+  - Código de validação único
+  - Logo do evento
+  - Detalhes do evento em três linhas centralizadas
+  - QR Code para validação
+- Processamento de mensagens SQS
+- Execução em container Docker
+- Deploy automatizado para AWS Lambda
+- Integração com AWS ECR
 
-1. **`EventsAPI`**: Classe responsável por:
-   - Buscar a lista de participantes via API.
-   - Fazer download do template do certificado.
-   - Enviar o certificado gerado para o servidor.
-
-2. **`Participant`**: Modelo que representa os dados de um participante do evento.
-
-3. **`CertifiedBuilder`**: Classe principal que:
-   - Gera certificados personalizados para cada participante.
-   - Realiza o upload dos certificados gerados para a API.
-
-4. **Pasta de Fontes** (`fonts/static/Chakra_Petch`): Fonte usada para escrever o nome no certificado.
-
-5. **Pasta de Fontes** (`fonts/static/Pinyon_Script`): Fonte usada para escrever o codigo de validação.
-
-6. **Pasta de Saída** (`certificates/`): Certificados gerados localmente.
-
----
-
-### Novas Funcionalidades
-
-1. **Integração com API para Upload de Certificados**:
-   - Após gerar o certificado, ele é convertido para um objeto binário em memória e enviado para a API utilizando a biblioteca **httpx**.
-
-2. **Download Dinâmico do Template do Certificado**:
-   - O template do certificado é baixado diretamente de uma URL fornecida pela API e salvo localmente para uso.
-
-3. **Envio Dinâmico dos Certificados**:
-   - Os certificados gerados são enviados para a API de upload junto com os dados do participante, como nome, e-mail, e código de validação.
-
----
-
-### Explicação do Código
-
-#### **`EventsAPI`**
-
-- **Objetivo**: Fornecer métodos para integração com a API de eventos.
-
-1. **`fetch_participants()`**:
-   - Faz uma requisição `GET` para buscar a lista de participantes.
-   - Transforma os dados recebidos em instâncias da classe `Participant`.
-
-2. **`fetch_file_certificate()`**:
-   - Faz o download do template de certificado de uma URL fornecida pela API.
-   - Retorna o template como um objeto **Pillow Image**.
-
-3. **`save_certificate(image_buffer, participant)`**:
-   - Envia o certificado gerado para a API de upload.
-   - Os dados do participante são enviados no corpo da requisição e a imagem é enviada como um arquivo no formato `multipart/form-data`.
-
----
-
-#### **`CertifiedBuilder`**
-
-- **Objetivo**: Gerenciar a criação e envio de certificados personalizados.
-
-1. **`build_certificates()`**:
-   - Obtém a lista de participantes da API e o template do certificado.
-   - Para cada participante:
-     - Gera o certificado personalizado.
-     - Salva o certificado localmente e envia para a API de upload.
-
-2. **`generate_certificate(participant, certificate_template)`**:
-   - Adiciona o nome do participante centralizado ao template do certificado.
-   - Retorna a imagem gerada para ser usada no upload.
-
-3. **`create_name_image(name, size)`**:
-   - Cria uma imagem com o nome do participante centralizado.
-   - Usa o método `calculate_text_position()` para determinar a posição exata.
-
-4. **`save_certificate(certificate, participant)`**:
-   - Converte o certificado gerado em um buffer de memória.
-   - Envia o certificado para a API de upload por meio do método `save_certificate()` da `EventsAPI`.
-
----
-
-### Como Funciona o Fluxo
-
-1. **Busca de Participantes e Template**:
-   - A API retorna a lista de participantes e o template do certificado.
-
-2. **Geração do Certificado**:
-   - O nome do participante é renderizado no template.
-   - A imagem é gerada e salva localmente.
-
-3. **Upload para o Servidor**:
-   - O certificado é enviado diretamente para o endpoint da API com os dados do participante.
-
----
-
-### Exemplo de Uso
-
-**1. Configuração Inicial**
-
-Certifique-se de que:
-- A API está configurada e retornando os dados corretamente.
-- O diretório `certificates/` existe:
-  ```bash
-  mkdir certificates
-  ```
-
-- A fonte utilizada (`OpenSans-Regular.ttf`) está na pasta `fonts/static/`.
-
-**2. Execução**
-
-Execute o script principal:
-
-```bash
-python main.py
-```
-
-O script irá:
-1. Buscar os participantes.
-2. Fazer download do template do certificado.
-3. Gerar os certificados personalizados.
-4. Salvar os certificados localmente.
-5. Enviar os certificados para a API.
-
----
-
-### Dependências
-
-Instale as dependências necessárias com:
-
-```bash
-pip install pillow httpx
-```
-
----
-
-### Saída Esperada
-
-- Certificados personalizados serão gerados e salvos no diretório `certificates/`.
-- Os certificados gerados serão enviados com sucesso para a API.
-
----
-
-### Estrutura do Diretório
+## Estrutura do Projeto
 
 ```plaintext
 project_root/
 ├── certified_builder/
-│   ├── certified_builder.py    # Classe para gerar certificados
-├── events_api/
-│   ├── events_api.py           # Integração com a API de eventos
-│   ├── models/
-│       ├── participant.py      # Modelo do participante
-├── certificates/               # Diretório para salvar os certificados gerados
+│   ├── certified_builder.py    # Classe principal de geração de certificados
+│   └── utils/
+│       └── fetch_file_certificate.py  # Utilitário para download de imagens
+├── models/
+│   ├── participant.py          # Modelo de dados do participante
+│   ├── certificate.py          # Modelo de dados do certificado
+│   └── event.py               # Modelo de dados do evento
 ├── fonts/
-│   ├── static/
-│       ├── OpenSans-Regular.ttf # Fonte utilizada
-├── main.py                     # Script principal para execução
-├── README.md                   # Documentação do projeto
+│   ├── PinyonScript/          # Fonte para o nome do participante
+│   └── ChakraPetch/           # Fonte para detalhes e código de validação
+├── lambda_function.py         # Handler da função Lambda
+├── Dockerfile                 # Configuração do container
+└── requirements.txt           # Dependências do projeto
 ```
 
+## Tecnologias Utilizadas
 
-## Estrutura de Dados
+- Python 3.13
+- Pillow (Processamento de imagens)
+- httpx (Requisições HTTP)
+- Pydantic (Validação de dados)
+- Docker
+- AWS Lambda
+- AWS ECR
+- AWS SQS
 
-### Entrada (SQS Message)
+## Formato da Mensagem SQS
 
 ```json
 {
-  "event_end": "2025-02-22 18:30:00",
-  "event_start": "2025-02-22 13:29:00",
-  "url_file_certificate": "https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png"
+  "participants": [
+    {
+      "first_name": "Nome",
+      "last_name": "Sobrenome",
+      "email": "email@exemplo.com",
+      "phone": "(00) 00000-0000",
+      "cpf": "000.000.000-00",
+      "order_id": 123,
+      "product_id": 456,
+      "product_name": "Nome do Evento",
+      "certificate_details": "Descrição do certificado em três linhas",
+      "certificate_logo": "URL do logo",
+      "certificate_background": "URL do template",
+      "order_date": "2025-03-26 20:55:25",
+      "checkin_latitude": "-27.5460492",
+      "checkin_longitude": "-48.6227075",
+      "time_checkin": "2025-03-26 20:55:44"
+    }
+  ]
 }
 ```
 
-### Testes Locais
+## Desenvolvimento Local
 
-Para criar a lambda localmente usando Docker:
+### Pré-requisitos
 
+- Docker
+- Python 3.13+
+- AWS CLI configurado
+
+### Executando Localmente
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/certified_builder_py.git
+cd certified_builder_py
 ```
+
+2. Instale as dependências:
+```bash
+pip install -r requirements.txt
+```
+
+3. Execute com Docker:
+```bash
 docker compose up --build --watch
 ```
 
-Para testar localmente usando o runtime da AWS Lambda:
-
+4. Teste localmente:
 ```bash
-curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"Records": [{"body": "{\"event_end\": \"2025-02-22 18:30:00\", \"event_start\": \"2025-02-22 13:29:00\", \"url_file_certificate\": \"https://python.floripa.br/wp-content/uploads/2025/02/83st-edition-of-the-Python-Floripa-Community-Meeting.png\"}"}]}'
+curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @test/mock.json
 ```
 
-Isso simula uma invocação da função Lambda em ambiente local.
+## Deploy
 
----
+O deploy é automatizado através do GitHub Actions:
 
-### Conclusão
+1. Push para a branch main dispara o workflow
+2. Imagem Docker é construída
+3. Upload para AWS ECR
+4. Atualização da função Lambda
 
-Este projeto demonstra como integrar dados dinâmicos a templates de imagem para criar certificados personalizados e enviá-los para uma API. É uma solução prática e escalável para eventos, automatizando tanto a geração quanto o upload dos certificados.
+## Estrutura do Certificado Gerado
+
+- **Logo**: Canto superior esquerdo (150x150 pixels)
+- **Nome**: Centro do certificado (fonte Pinyon Script)
+- **Detalhes**: Três linhas centralizadas abaixo do nome (fonte Chakra Petch)
+- **Código de Validação**: Canto inferior direito (fonte Chakra Petch)
+- **QR Code**: Canto inferior direito para validação online
+
+## Contribuindo
+
+1. Fork o projeto
+2. Crie sua branch de feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 

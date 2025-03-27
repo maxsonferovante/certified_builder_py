@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from .certificate import Certificate
 from .event import Event
@@ -9,7 +9,7 @@ import string
 class Participant(BaseModel): 
     first_name: str
     last_name: str
-    email: str
+    email: EmailStr
     phone: str
     cpf: str    
     validation_code: Optional[str] = Field(default_factory= lambda: ''.join(random.choices(string.hexdigits, k=9)), init=False)

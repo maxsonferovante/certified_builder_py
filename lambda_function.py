@@ -5,6 +5,8 @@ from models.participant import Participant
 from models.certificate import Certificate
 from models.event import Event
 from datetime import datetime
+import base64
+import os
 
 # Configure logging for CloudWatch
 logger = logging.getLogger()
@@ -22,6 +24,14 @@ handler.setFormatter(logging.Formatter(
 ))
 logger.addHandler(handler)
 
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        if hasattr(obj, 'dict'):
+            return obj.dict()
+        return super().default(obj)
+
 def extract_data_body(event):
     try:        
         logger.info("Event recebido : {}".format(event))
@@ -35,68 +45,114 @@ def extract_data_body(event):
         logger.error(f"Erro ao extrair dados do body: {str(e)}", exc_info=True)
         raise
 
-def create_participants_list(data):
-    participants = []
-    for item in data:
-        # Create certificate object if certificate details exist
-        certificate = None
-        if 'certificate_details' in item and 'certificate_logo' in item and 'certificate_background' in item:
-            certificate = Certificate(
-                details=item['certificate_details'],
-                logo=item['certificate_logo'],
-                background=item['certificate_background']
-            )
+def create_participant_object(participant_data):
+    # Create Certificate object
+    certificate = Certificate(
+        details=participant_data.get('certificate_details'),
+        logo=participant_data.get('certificate_logo'),
+        background=participant_data.get('certificate_background')
+    )
+    
+    # Create Event object
+    event = Event(
+        order_id=participant_data.get('order_id'),
+        product_id=participant_data.get('product_id'),
+        product_name=participant_data.get('product_name'),
+        date=datetime.strptime(participant_data.get('order_date'), "%Y-%m-%d %H:%M:%S"),
+        time_checkin=datetime.strptime(participant_data.get('time_checkin'), "%Y-%m-%d %H:%M:%S") if participant_data.get('time_checkin') else None,
+        checkin_latitude=float(participant_data.get('checkin_latitude')) if participant_data.get('checkin_latitude') else None,
+        checkin_longitude=float(participant_data.get('checkin_longitude')) if participant_data.get('checkin_longitude') else None
+    )
+    
+    # Create Participant object
+    participant = Participant(
+        first_name=participant_data.get('first_name'),
+        last_name=participant_data.get('last_name'),
+        email=participant_data.get('email'),
+        phone=participant_data.get('phone'),
+        cpf=participant_data.get('cpf', ''),
+        certificate=certificate,
+        event=event
+    )
+    return participant
 
-        # Create event object
-        event = None
-        if all(key in item for key in ['order_id', 'product_id', 'product_name', 'order_date', 'time_checkin', 'checkin_latitude', 'checkin_longitude']):
-            event = Event(
-                order_id=item['order_id'],
-                product_id=item['product_id'],
-                product_name=item['product_name'],
-                date=datetime.strptime(item['order_date'], '%Y-%m-%d %H:%M:%S'),
-                time_checkin=datetime.strptime(item['time_checkin'], '%Y-%m-%d %H:%M:%S'),
-                checkin_latitude=float(item['checkin_latitude']) if item['checkin_latitude'] else 0.0,
-                checkin_longitude=float(item['checkin_longitude']) if item['checkin_longitude'] else 0.0
-            )
-
-        participant = Participant(
-            first_name=item['first_name'],
-            last_name=item['last_name'],
-            email=item['email'],
-            phone=item['phone'],
-            cpf=item['cpf'],
-            certificate=certificate,
-            event=event
-        )
-        participants.append(participant)
-    return participants
+def format_result(result):
+    if isinstance(result, dict):
+        formatted = {}
+        for key, value in result.items():
+            if isinstance(value, (Participant, Certificate, Event)):
+                formatted[key] = value.model_dump()
+            elif isinstance(value, datetime):
+                formatted[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                formatted[key] = value
+        return formatted
+    return result
 
 def lambda_handler(event, context):
     # Log the start of the Lambda execution
     try:
         logger.info("Starting Lambda execution")    
         body = extract_data_body(event)
-        participants_data = body['participants']  # New field expected in the body    
+        participants_data = body.get('participants', [])
+        
+        if not participants_data:
+            logger.warning("No participants found in message")
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': 'No participants found in message',
+                    'message': 'Nenhum participante encontrado para processamento'
+                })
+            }
+        
         logger.info("Iniciando geração de certificados")
         
         # Create list of participants
-        participants = create_participants_list(participants_data)
-        logger.info(f"Created {len(participants)} participants")
+        participants = []
+        results = []
         
-        certified_builder = CertifiedBuilder()
-        certified_builder.build_certificates(participants)
+        for participant_data in participants_data:
+            try:
+                participant = create_participant_object(participant_data)
+                participants.append(participant)
+            except Exception as e:
+                logger.error(f"Error creating participant object: {str(e)}")
+                results.append({
+                    'participant_data': participant_data,
+                    'error': str(e),
+                    'success': False
+                })
         
-        logger.info("Certificados gerados com sucesso")
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Certificados gerados com sucesso',
-                'participants_processed': len(participants)
-            })
-        }
+        # Generate certificates if we have valid participants
+        if participants:
+            builder = CertifiedBuilder()
+            certificates_results = builder.build_certificates(participants)
+            # Format results before adding to response
+            formatted_results = [format_result(result) for result in certificates_results]
+            results.extend(formatted_results)
+            
+            logger.info("Certificados gerados com sucesso")
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'message': 'Processamento concluído',
+                    'results': results
+                }, cls=DateTimeEncoder)
+            }
+        else:
+            logger.warning("No valid participants to process")
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': 'No valid participants to process',
+                    'message': 'Nenhum participante válido para processamento',
+                    'results': results
+                }, cls=DateTimeEncoder)
+            }
+            
     except Exception as e:
-        logger.error(f"Erro ao gerar certificados: {str(e)}", exc_info=True)
+        logger.error(f"Error in lambda handler: {str(e)}")
         return {
             'statusCode': 500,
             'body': json.dumps({

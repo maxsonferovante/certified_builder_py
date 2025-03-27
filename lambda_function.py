@@ -6,13 +6,21 @@ from models.certificate import Certificate
 from models.event import Event
 from datetime import datetime
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S')
+# Configure logging for CloudWatch
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-logger = logging.getLogger(__name__)
+# Remove any existing handlers to avoid duplicate logs
+for handler in logger.handlers:
+    logger.removeHandler(handler)
 
+# Add a StreamHandler for CloudWatch
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+logger.addHandler(handler)
 
 def extract_data_body(event):
     try:        
@@ -65,22 +73,35 @@ def create_participants_list(data):
     return participants
 
 def lambda_handler(event, context):
-    body = extract_data_body(event)
-    participants_data = body['participants']  # New field expected in the body    
+    # Log the start of the Lambda execution
     try:
+        logger.info("Starting Lambda execution")    
+        body = extract_data_body(event)
+        participants_data = body['participants']  # New field expected in the body    
         logger.info("Iniciando geração de certificados")
         
         # Create list of participants
         participants = create_participants_list(participants_data)
         logger.info(f"Created {len(participants)} participants")
         
-                
         certified_builder = CertifiedBuilder()
-        
         certified_builder.build_certificates(participants)
         
         logger.info("Certificados gerados com sucesso")
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'Certificados gerados com sucesso',
+                'participants_processed': len(participants)
+            })
+        }
     except Exception as e:
         logger.error(f"Erro ao gerar certificados: {str(e)}", exc_info=True)
-        raise
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'error': str(e),
+                'message': 'Erro ao gerar certificados'
+            })
+        }
 

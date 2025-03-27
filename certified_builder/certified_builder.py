@@ -37,7 +37,7 @@ class CertifiedBuilder:
                     certificate_path = self.save_certificate(certificate_generated, participant)
                     
                     results.append({
-                        "participant": participant.dict(),
+                        "participant": participant.model_dump(),
                         "certificate_path": certificate_path,
                         "success": True
                     })
@@ -46,7 +46,7 @@ class CertifiedBuilder:
                 except Exception as e:
                     logger.error(f"Erro ao gerar certificado para {participant.name_completed()}: {str(e)}")
                     results.append({
-                        "participant": participant.dict(),
+                        "participant": participant.model_dump(),
                         "error": str(e),
                         "success": False
                     })

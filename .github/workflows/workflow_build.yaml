@@ -33,8 +33,14 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name certified_builder_py \
+            --image-uri ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
       
       - name: Complete
         run: |
-          echo "Docker image has been pushed to AWS ECR Private"
+          echo "Docker image has been pushed to AWS ECR Private and Lambda function has been updated"
 

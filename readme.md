@@ -99,7 +99,7 @@ pip install -r requirements.txt
 
 3. Execute com Docker:
 ```bash
-docker compose up --build --watch
+docker build -t certified-builder . && docker run -p 9000:8080 certified-builder
 ```
 
 4. Teste localmente:

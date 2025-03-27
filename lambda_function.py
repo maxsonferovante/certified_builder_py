@@ -28,8 +28,8 @@ class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
-        if hasattr(obj, 'dict'):
-            return obj.dict()
+        if hasattr(obj, 'model_dump'):
+            return obj.model_dump()
         return super().default(obj)
 
 def extract_data_body(event):
@@ -106,7 +106,7 @@ def lambda_handler(event, context):
                 })
             }
         
-        logger.info("Iniciando geração de certificados")
+        logger.info(f"Processing {len(participants_data)} participants")
         
         # Create list of participants
         participants = []

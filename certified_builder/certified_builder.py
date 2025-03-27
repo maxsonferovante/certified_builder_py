@@ -1,9 +1,9 @@
 import logging
-from events_api.events_api import EventsAPI
-from events_api.models.participant import Participant
+from typing import List
+from models.participant import Participant
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-
+from certified_builder.utils.fetch_file_certificate import fetch_file_certificate
 
 FONT_NAME="certified_builder/fonts/PinyonScript/PinyonScript-Regular.ttf"
 VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-SemiBold.ttf"
@@ -11,17 +11,13 @@ VALIDATION_CODE="certified_builder/fonts/ChakraPetch/ChakraPetch-SemiBold.ttf"
 logger = logging.getLogger(__name__)
 
 class CertifiedBuilder:
-    def __init__(self, events_api: EventsAPI):
-        self.events_api = events_api
-
-    def build_certificates(self):
-        participants = self.events_api.fetch_participants()
-        # Fetch certificate template par o participante atual e o evento para o qual ele está inscrito
-        certificate_template = self.events_api.fetch_file_certificate()
         
+    def build_certificates(self, participants: List[Participant]):
+        logger.info(f"Iniciando geração de {len(participants)} certificados")
         for participant in participants:
-            certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
-            self.save_certificate(certificate_generated, participant)
+            certificate_template = fetch_file_certificate(participant.certificate.background)
+            # certificate_generated = self.generate_certificate(participant, certificate_template.copy())            
+            # self.save_certificate(certificate_generated, participant)
             logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
 
     def generate_certificate(self, participant: Participant, certificate_template: Image):        
@@ -62,10 +58,9 @@ class CertifiedBuilder:
         position = (size[0] - text_width - 50, size[1] - text_height - 40)        
         return position
     
-    def save_certificate(self, certificate: Image, participant: Participant):                    
-        # o nome da imagem terá o id do evento, a data do evento e o código de validação e o nome do participante, sem acentos e em maiúsculas, separados por underline
+    def save_certificate(self, certificate: Image, participant: Participant):                            
         name_certificate = participant.create_name_certificate()            
         image_buffer = BytesIO()
         certificate.save(image_buffer, format="PNG")
         image_buffer.seek(0)        
-        self.events_api.save_certificate(image_buffer, participant, name_certificate)
+        # self.events_api.save_certificate(image_buffer, participant, name_certificate)

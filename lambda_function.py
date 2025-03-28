@@ -7,6 +7,8 @@ from models.event import Event
 from datetime import datetime
 import base64
 import os
+from aws.s3_service import S3Service
+from aws.sqs_service import SQSService
 
 # Configure logging for CloudWatch
 logger = logging.getLogger()
@@ -92,6 +94,7 @@ def format_result(result):
 def lambda_handler(event, context):
     # Log the start of the Lambda execution
     try:
+
         logger.info("Starting Lambda execution")    
         body = extract_data_body(event)
         participants_data = body
@@ -105,7 +108,9 @@ def lambda_handler(event, context):
                     'message': 'Nenhum participante encontrado para processamento'
                 })
             }
-        
+        s3_service = S3Service()
+        sqs_service = SQSService()
+
         logger.info(f"Processing {len(participants_data)} participants")
         
         # Create list of participants
@@ -129,8 +134,23 @@ def lambda_handler(event, context):
             builder = CertifiedBuilder()
             certificates_results = builder.build_certificates(participants)
             # Format results before adding to response
-            formatted_results = [format_result(result) for result in certificates_results]
-            results.extend(formatted_results)
+            formatted_results = []
+            
+            for result in certificates_results:
+                formatted_results.extend(format_result(result))            
+                
+                if result.get('success'):
+                    s3_service.upload_file(result.get('certificate_path'), result.get('certificate_key'))
+                
+                sqs_service.send_message({
+                    "order_id": result.get('participant', {}).get('event', {}).get('order_id', ""),
+                    "product_id": result.get('participant', {}).get('event', {}).get('product_id', ""),
+                    "product_name": result.get('participant', {}).get('event', {}).get('product_name', ""),
+                    "email": result.get('participant', {}).get('email', ""),
+                    "certificate_key": result.get('certificate_key', ""),
+                    "success": result.get('success', False)
+                })
+            
             
             logger.info("Certificados gerados com sucesso")
             return {
@@ -161,3 +181,48 @@ def lambda_handler(event, context):
             })
         }
 
+if __name__ == "__main__":
+    lambda_handler({
+	"Records": [
+		{
+			"body": [
+				{
+					"order_id": 452,
+					"first_name": "Jardel",
+					"last_name": "Godinho",
+					"email": "jardelgodinho@gmail.com",
+					"phone": "(48) 98866-7447",
+					"cpf": "",
+					"city": "São José",
+					"product_id": 316,
+					"product_name": "Evento de Teste",
+					"certificate_details": "In recognition of their participation in the 84st edition of the Python Floripa Community Meeting, held on March 29, 2025, in Florianópolis, Brazil.",
+					"certificate_logo": "https://tech.floripa.br/wp-content/uploads/2025/03/84o-Python-Floripa-e1741729144453.png",
+					"certificate_background": "https://tech.floripa.br/wp-content/uploads/2025/03/Background.png",
+					"order_date": "2025-03-26 20:55:25",
+					"checkin_latitude": "-27.5460492",
+					"checkin_longitude": "-48.6227075",
+					"time_checkin": "2025-03-26 20:55:44"
+				},
+				{
+					"order_id": 317,
+					"first_name": "Jardel",
+					"last_name": "Godinho",
+					"email": "jardel.godinho@gmail.com",
+					"phone": "(48) 98866-7447",
+					"cpf": "",
+					"city": "",
+					"product_id": 316,
+					"product_name": "Evento de Teste",
+					"certificate_details": "In recognition of their participation in the 84st edition of the Python Floripa Community Meeting, held on March 29, 2025, in Florianópolis, Brazil.",
+					"certificate_logo": "https://tech.floripa.br/wp-content/uploads/2025/03/84o-Python-Floripa-e1741729144453.png",
+					"certificate_background": "https://tech.floripa.br/wp-content/uploads/2025/03/Background.png",
+					"order_date": "2025-03-19 06:04:51",
+					"checkin_latitude": "-27.5460492",
+					"checkin_longitude": "-48.6227075",
+					"time_checkin": "2025-03-19 16:04:16"
+				}
+			]
+		}
+	]
+}, {})

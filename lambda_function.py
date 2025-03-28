@@ -7,6 +7,8 @@ from models.event import Event
 from datetime import datetime
 import base64
 import os
+from aws.s3_service import S3Service
+from aws.sqs_service import SQSService
 
 # Configure logging for CloudWatch
 logger = logging.getLogger()
@@ -92,6 +94,7 @@ def format_result(result):
 def lambda_handler(event, context):
     # Log the start of the Lambda execution
     try:
+
         logger.info("Starting Lambda execution")    
         body = extract_data_body(event)
         participants_data = body
@@ -105,7 +108,9 @@ def lambda_handler(event, context):
                     'message': 'Nenhum participante encontrado para processamento'
                 })
             }
-        
+        s3_service = S3Service()
+        sqs_service = SQSService()
+
         logger.info(f"Processing {len(participants_data)} participants")
         
         # Create list of participants
@@ -129,8 +134,23 @@ def lambda_handler(event, context):
             builder = CertifiedBuilder()
             certificates_results = builder.build_certificates(participants)
             # Format results before adding to response
-            formatted_results = [format_result(result) for result in certificates_results]
-            results.extend(formatted_results)
+            formatted_results = []
+            
+            for result in certificates_results:
+                formatted_results.extend(format_result(result))            
+                
+                if result.get('success'):
+                    s3_service.upload_file(result.get('certificate_path'), result.get('certificate_key'))
+                
+                sqs_service.send_message({
+                    "order_id": result.get('participant', {}).get('event', {}).get('order_id', ""),
+                    "product_id": result.get('participant', {}).get('event', {}).get('product_id', ""),
+                    "product_name": result.get('participant', {}).get('event', {}).get('product_name', ""),
+                    "email": result.get('participant', {}).get('email', ""),
+                    "certificate_key": result.get('certificate_key', ""),
+                    "success": result.get('success', False)
+                })
+            
             
             logger.info("Certificados gerados com sucesso")
             return {
@@ -160,4 +180,3 @@ def lambda_handler(event, context):
                 'message': 'Erro ao gerar certificados'
             })
         }
-

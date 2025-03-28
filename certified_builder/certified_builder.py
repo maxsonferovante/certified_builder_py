@@ -6,7 +6,6 @@ from io import BytesIO
 import os
 from certified_builder.utils.fetch_file_certificate import fetch_file_certificate
 import tempfile
-
 FONT_NAME = os.path.join(os.path.dirname(__file__), "fonts/PinyonScript/PinyonScript-Regular.ttf")
 VALIDATION_CODE = os.path.join(os.path.dirname(__file__), "fonts/ChakraPetch/ChakraPetch-SemiBold.ttf")
 DETAILS_FONT = os.path.join(os.path.dirname(__file__), "fonts/ChakraPetch/ChakraPetch-Regular.ttf")
@@ -19,6 +18,7 @@ class CertifiedBuilder:
         # Ensure temp directory exists
         self.temp_dir = "/tmp/certificates"
         os.makedirs(self.temp_dir, exist_ok=True)
+
         
     def build_certificates(self, participants: List[Participant]):
         """Build certificates for all participants."""
@@ -39,8 +39,10 @@ class CertifiedBuilder:
                     results.append({
                         "participant": participant.model_dump(),
                         "certificate_path": certificate_path,
+                        "certificate_key": f"certificates/{participant.event.product_id}/{participant.event.order_id}/{participant.create_name_certificate()}",
                         "success": True
                     })
+                                        
                     
                     logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
                 except Exception as e:
@@ -50,7 +52,7 @@ class CertifiedBuilder:
                         "error": str(e),
                         "success": False
                     })
-            
+                
             return results
         except Exception as e:
             logger.error(f"Erro geral na geração de certificados: {str(e)}")
@@ -186,12 +188,11 @@ class CertifiedBuilder:
         try:
             name_certificate = participant.create_name_certificate()
             file_path = os.path.join(self.temp_dir, name_certificate)
-            
             # Optimize image before saving
             certificate = certificate.convert('RGB')
-            certificate.save(file_path, format="PNG", optimize=True)
-            
+            certificate.save(file_path, format="PNG", optimize=True)            
             return file_path
+            
         except Exception as e:
             logger.error(f"Erro ao salvar certificado: {str(e)}")
             raise

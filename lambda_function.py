@@ -94,7 +94,7 @@ def lambda_handler(event, context):
     try:
         logger.info("Starting Lambda execution")    
         body = extract_data_body(event)
-        participants_data = body.get('participants', [])
+        participants_data = body
         
         if not participants_data:
             logger.warning("No participants found in message")

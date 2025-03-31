@@ -26,11 +26,29 @@ class CertifiedBuilder:
             logger.info(f"Iniciando geração de {len(participants)} certificados")
             results = []
             
+            # Cache for background and logo if they are the same for all participants
+            certificate_template = None
+            logo = None
+            
+            # Check if all participants share the same background and logo
+            if participants:
+                first_participant = participants[0]
+                all_same_background = all(p.certificate.background == first_participant.certificate.background for p in participants)
+                all_same_logo = all(p.certificate.logo == first_participant.certificate.logo for p in participants)
+                
+                # Download shared resources once if they are the same for all
+                if all_same_background:
+                    certificate_template = self._download_image(first_participant.certificate.background)
+                if all_same_logo:
+                    logo = self._download_image(first_participant.certificate.logo)
+            
             for participant in participants:
                 try:
-                    # Download template and logo with error handling
-                    certificate_template = self._download_image(participant.certificate.background)
-                    logo = self._download_image(participant.certificate.logo)
+                    # Download template and logo only if they are not shared
+                    if not all_same_background:
+                        certificate_template = self._download_image(participant.certificate.background)
+                    if not all_same_logo:
+                        logo = self._download_image(participant.certificate.logo)
                     
                     # Generate and save certificate
                     certificate_generated = self.generate_certificate(participant, certificate_template, logo)
@@ -43,7 +61,6 @@ class CertifiedBuilder:
                         "success": True
                     })
                                         
-                    
                     logger.info(f"Certificado gerado para {participant.name_completed()} com codigo de validação {participant.formated_validation_code()}")
                 except Exception as e:
                     logger.error(f"Erro ao gerar certificado para {participant.name_completed()}: {str(e)}")

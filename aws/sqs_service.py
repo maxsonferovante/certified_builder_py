@@ -1,7 +1,7 @@
 from aws.boto_aws import get_instance_aws, ServiceNameAWS
 from config import config
 from botocore.exceptions import ClientError
-from typing import Dict
+from typing import Dict, List
 import json
 import logging
 import uuid
@@ -13,15 +13,16 @@ class SQSService:
         self.aws = get_instance_aws(ServiceNameAWS.SQS)
         self.queue_url = config.QUEUE_URL        
 
-    def send_message(self, message: Dict):
+    def send_message(self, messagens: List[Dict]):
         try:
             # Add MessageGroupId for FIFO queue
             # Using order_id as MessageGroupId to ensure messages for the same order are processed in order
             message_group_id = str(uuid.uuid4())
             message_deduplication_id = str(uuid.uuid4())
+            logger.info(f"Enviando mensagem para a fila {self.queue_url} com MessageGroupId: {message_group_id} e MessageDeduplicationId: {message_deduplication_id}, com {len(messagens)} mensagens")
             response = self.aws.send_message(
                 QueueUrl=self.queue_url,
-                MessageBody=json.dumps(message),
+                MessageBody=json.dumps(messagens),
                 MessageGroupId=message_group_id,
                 MessageDeduplicationId=message_deduplication_id,
             )

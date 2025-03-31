@@ -78,19 +78,6 @@ def create_participant_object(participant_data):
     )
     return participant
 
-def format_result(result):
-    if isinstance(result, dict):
-        formatted = {}
-        for key, value in result.items():
-            if isinstance(value, (Participant, Certificate, Event)):
-                formatted[key] = value.model_dump()
-            elif isinstance(value, datetime):
-                formatted[key] = value.strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                formatted[key] = value
-        return formatted
-    return result
-
 def lambda_handler(event, context):
     # Log the start of the Lambda execution
     try:
@@ -134,15 +121,16 @@ def lambda_handler(event, context):
             builder = CertifiedBuilder()
             certificates_results = builder.build_certificates(participants)
             # Format results before adding to response
-            formatted_results = []
+            certificates_results_messagens = []
             
             for result in certificates_results:
-                formatted_results.extend(format_result(result))            
+                
                 
                 if result.get('success'):
                     s3_service.upload_file(result.get('certificate_path'), result.get('certificate_key'))
                 
-                sqs_service.send_message({
+
+                certificates_results_messagens.append({                
                     "order_id": result.get('participant', {}).get('event', {}).get('order_id', ""),
                     "product_id": result.get('participant', {}).get('event', {}).get('product_id', ""),
                     "product_name": result.get('participant', {}).get('event', {}).get('product_name', ""),
@@ -151,6 +139,7 @@ def lambda_handler(event, context):
                     "success": result.get('success', False)
                 })
             
+            sqs_service.send_message(certificates_results_messagens)
             
             logger.info("Certificados gerados com sucesso")
             return {

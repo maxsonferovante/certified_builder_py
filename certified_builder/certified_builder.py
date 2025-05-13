@@ -83,9 +83,31 @@ class CertifiedBuilder:
             logger.error(f"Erro ao baixar imagem de {url}: {str(e)}")
             raise RuntimeError(f"Error downloading image from {url}: {str(e)}")
 
+    def _ensure_valid_rgba(self, img: Image) -> Image:
+        """Ensure image has a valid RGBA mode with proper transparency channel."""
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        
+        # Some PNG images may have problematic transparency channels
+        # Create a new image with proper alpha channel
+        try:
+            new_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            new_img.paste(img, (0, 0), img if 'A' in img.mode else None)
+            return new_img
+        except Exception as e:
+            logger.warning(f"Erro ao processar transparência, usando método alternativo: {str(e)}")
+            # Fallback method if there's an issue with the alpha channel
+            new_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            new_img.paste(img.convert('RGB'), (0, 0))
+            return new_img
+
     def generate_certificate(self, participant: Participant, certificate_template: Image, logo: Image):
         """Generate a certificate for a participant."""
         try:
+            # Ensure images have valid transparency channels
+            certificate_template = self._ensure_valid_rgba(certificate_template)
+            logo = self._ensure_valid_rgba(logo)
+            
             # Create transparent layer for text and logo
             overlay = Image.new("RGBA", certificate_template.size, (255, 255, 255, 0))
             
@@ -93,13 +115,25 @@ class CertifiedBuilder:
             logo_size = (150, 150)
             logo = logo.resize(logo_size, Image.Resampling.LANCZOS)
             
-            # Paste logo
-            padding = 50
-            overlay.paste(logo, (padding, padding), logo)
+            # Paste logo - handle potential transparency issues
+            try:
+                # Try with mask first
+                overlay.paste(logo, (50, 50), logo)
+            except Exception as e:
+                logger.warning(f"Erro ao colar logo com máscara, usando método alternativo: {str(e)}")
+                # Fallback without using the logo as its own mask
+                overlay.paste(logo, (50, 50))
             
             # Add name
             name_image = self.create_name_image(participant.name_completed(), certificate_template.size)
-            overlay.paste(name_image, (0, 0), name_image)
+            
+            # Paste with error handling
+            try:
+                overlay.paste(name_image, (0, 0), name_image)
+            except Exception as e:
+                logger.warning(f"Erro ao colar nome com máscara, usando método alternativo: {str(e)}")
+                # Try without mask
+                overlay.paste(name_image, (0, 0))
             
             # Add details
             details_image = self.create_details_image(participant.certificate.details, certificate_template.size)
@@ -107,17 +141,40 @@ class CertifiedBuilder:
             details_y = name_center_y + 50
             
             details_with_position = Image.new("RGBA", certificate_template.size, (255, 255, 255, 0))
-            details_with_position.paste(details_image, (0, details_y), details_image)
-            overlay = Image.alpha_composite(overlay, details_with_position)
+            
+            # Paste with error handling
+            try:
+                details_with_position.paste(details_image, (0, details_y), details_image)
+            except Exception as e:
+                logger.warning(f"Erro ao colar detalhes com máscara, usando método alternativo: {str(e)}")
+                details_with_position.paste(details_image, (0, details_y))
+            
+            try:
+                overlay = Image.alpha_composite(overlay, details_with_position)
+            except Exception as e:
+                logger.warning(f"Erro na composição alpha, usando método alternativo: {str(e)}")
+                # Fallback to simple paste if alpha composite fails
+                overlay.paste(details_with_position, (0, 0))
             
             # Add validation code
             validation_code_image = self.create_validation_code_image(participant.formated_validation_code(), certificate_template.size)
-            overlay.paste(validation_code_image, (0, 0), validation_code_image)
+            
+            try:
+                overlay.paste(validation_code_image, (0, 0), validation_code_image)
+            except Exception as e:
+                logger.warning(f"Erro ao colar código de validação com máscara, usando método alternativo: {str(e)}")
+                overlay.paste(validation_code_image, (0, 0))
             
             # Merge and optimize final image
             result = Image.new("RGBA", certificate_template.size, (255, 255, 255, 0))
             result.paste(certificate_template, (0, 0))
-            result = Image.alpha_composite(result, overlay)
+            
+            try:
+                result = Image.alpha_composite(result, overlay)
+            except Exception as e:
+                logger.warning(f"Erro na composição alpha final, usando método alternativo: {str(e)}")
+                # Fallback to simple paste if alpha composite fails
+                result.paste(overlay, (0, 0))
             
             return result
         except Exception as e:

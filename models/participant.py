@@ -2,9 +2,15 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from .certificate import Certificate
 from .event import Event
+import re
+import unicodedata
+import logging
 
 import random
 import string
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
 
 class Participant(BaseModel): 
     first_name: str
@@ -32,6 +38,65 @@ class Participant(BaseModel):
         
         return name_completed.title()
     
+    def _sanitize_filename(self, text: str) -> str:
+        """
+        Sanitiza uma string para ser usada como nome de arquivo no S3.
+        Remove ou substitui caracteres especiais que podem causar problemas em URLs.
+        
+        Args:
+            text (str): Texto a ser sanitizado
+            
+        Returns:
+            str: Texto sanitizado adequado para nomes de arquivo S3
+        """
+        # Normaliza caracteres unicode (remove acentos)
+        text = unicodedata.normalize('NFD', text)
+        text = ''.join(char for char in text if unicodedata.category(char) != 'Mn')
+        
+        # Substitui caracteres especiais comuns por versões seguras
+        special_chars = {
+            'º': 'o',
+            'ª': 'a', 
+            '×': 'x',
+            '@': '_at_',
+            '&': '_and_',
+            '+': '_plus_',
+            '=': '_equals_',
+            '%': '_percent_',
+            '#': '_hash_',
+            '?': '_question_',
+            '/': '_slash_',
+            '\\': '_backslash_',
+            ':': '_colon_',
+            ';': '_semicolon_',
+            '<': '_lt_',
+            '>': '_gt_',
+            '|': '_pipe_',
+            '*': '_star_',
+            '"': '_quote_',
+            "'": '_apostrophe_'
+        }
+        
+        # Aplica as substituições de caracteres especiais
+        for char, replacement in special_chars.items():
+            text = text.replace(char, replacement)
+        
+        # Remove caracteres que não são alfanuméricos, espaços, hífens ou underscores
+        text = re.sub(r'[^\w\s\-_]', '', text)
+        
+        # Substitui espaços múltiplos por um único espaço
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Substitui espaços por underscores
+        text = text.replace(' ', '_')
+        
+        # Remove underscores múltiplos consecutivos
+        text = re.sub(r'_+', '_', text)
+        
+        # Remove underscores do início e fim
+        text = text.strip('_')
+        
+        return text
                 
 
     def formated_validation_code(self):
@@ -39,6 +104,17 @@ class Participant(BaseModel):
         return f"{self.validation_code[0:3]}-{self.validation_code[3:6]}-{self.validation_code[6:9]}"
 
     def create_name_certificate(self):        
-        name_certificate = self.name_completed() + self.event.product_name + "_" + self.formated_validation_code() + ".png"
-        name_certificate = name_certificate.replace(" ", "_")
+        # Sanitiza o nome do participante e o nome do produto separadamente
+        sanitized_name = self._sanitize_filename(self.name_completed())
+        sanitized_product = self._sanitize_filename(self.event.product_name)
+        sanitized_validation = self._sanitize_filename(self.formated_validation_code())
+        
+        # Combina os componentes sanitizados
+        name_certificate = f"{sanitized_name}{sanitized_product}_{sanitized_validation}.png"
+        
+        logger.info(f"Nome do participante antes da sanitização: {self.name_completed()}")
+        logger.info(f"Nome do produto antes da sanitização: {self.event.product_name}")
+        logger.info(f"Código de validação antes da sanitização: {self.formated_validation_code()}")
+        logger.info(f"Nome do certificado após a sanitização: {name_certificate}")
+        
         return name_certificate

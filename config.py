@@ -4,8 +4,6 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger(__name__)
 
 class Config(BaseSettings):
-    KEY_ACCESS: str
-    KEY_SECRET: str
     REGION: str
     BUCKET_NAME: str    
     QUEUE_URL: str

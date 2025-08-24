@@ -4,7 +4,6 @@ from botocore.exceptions import ClientError
 from typing import Dict, List
 import json
 import logging
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +16,10 @@ class SQSService:
         try:
             # Add MessageGroupId for FIFO queue
             # Using order_id as MessageGroupId to ensure messages for the same order are processed in order
-            message_group_id = str(uuid.uuid4())
-            message_deduplication_id = str(uuid.uuid4())
-            logger.info(f"Enviando mensagem para a fila {self.queue_url} com MessageGroupId: {message_group_id} e MessageDeduplicationId: {message_deduplication_id}, com {len(messagens)} mensagens")
+            logger.info(f"Enviando mensagem para a fila {self.queue_url} com {len(messagens)} mensagens")
             response = self.aws.send_message(
                 QueueUrl=self.queue_url,
                 MessageBody=json.dumps(messagens),
-                MessageGroupId=message_group_id,
-                MessageDeduplicationId=message_deduplication_id,
             )
             logger.info(f"Mensagem enviada com sucesso: {response['MessageId']}")
             return response

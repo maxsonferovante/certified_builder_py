@@ -64,7 +64,9 @@ def test_register_certificate_success(sample_payload, monkeypatch):
         assert call_kwargs["json"] == sample_payload
 
 
-def test_register_certificate_http_error_raises(sample_payload, monkeypatch):
+def test_register_certificate_http_error_raises(
+    sample_payload, monkeypatch, no_retry_sleep
+):
     monkeypatch.setattr(
         module_under_test.config,
         "SERVICE_URL_REGISTRATION_API_SOLANA",
@@ -99,3 +101,142 @@ def test_register_certificate_http_error_raises(sample_payload, monkeypatch):
             CertificatesOnSolana.register_certificate_on_solana(sample_payload)
 
         assert "boom" in str(exc.value.details)
+
+
+@pytest.fixture
+def no_retry_sleep(monkeypatch):
+    import retry.api
+
+    monkeypatch.setattr(retry.api.time, "sleep", lambda _: None)
+
+
+def _client_raising_on_post(error):
+    mock_client_instance = MagicMock()
+    mock_client_instance.post.side_effect = error
+    mock_client_instance.__enter__.return_value = mock_client_instance
+    mock_client_instance.__exit__.return_value = False
+    return mock_client_instance
+
+
+def test_register_certificate_dns_failure_stage(sample_payload, no_retry_sleep):
+    import socket
+    import httpx
+
+    dns_error = httpx.ConnectError("[Errno -2] Name or service not known")
+    dns_error.__cause__ = socket.gaierror(-2, "Name or service not known")
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_raising_on_post(dns_error),
+    ):
+        with pytest.raises(CertificatesOnSolanaException) as exc:
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert exc.value.stage == "dns"
+    assert "[stage=dns]" in str(exc.value)
+
+
+def test_register_certificate_auth_failure_stage(sample_payload, no_retry_sleep):
+    import httpx
+
+    request = httpx.Request("POST", "https://example.test/solana/register")
+    response = httpx.Response(401, request=request, json={"detail": "Invalid API Key"})
+
+    mock_client_instance = MagicMock()
+    mock_client_instance.post.return_value = response
+    mock_client_instance.__enter__.return_value = mock_client_instance
+    mock_client_instance.__exit__.return_value = False
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=mock_client_instance,
+    ):
+        with pytest.raises(CertificatesOnSolanaException) as exc:
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert exc.value.stage == "auth"
+
+
+def test_register_certificate_failure_log_has_no_secrets(
+    sample_payload, no_retry_sleep, caplog
+):
+    import httpx
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_raising_on_post(httpx.ConnectError("refused")),
+    ):
+        with pytest.raises(CertificatesOnSolanaException):
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert "stage=connect" in caplog.text
+    assert "test-api-key" not in caplog.text
+    assert sample_payload["email"] not in caplog.text
+    assert sample_payload["name"] not in caplog.text
+
+
+def _client_returning(response):
+    mock_client_instance = MagicMock()
+    mock_client_instance.post.return_value = response
+    mock_client_instance.__enter__.return_value = mock_client_instance
+    mock_client_instance.__exit__.return_value = False
+    return mock_client_instance
+
+
+def test_register_certificate_4xx_body_echoing_payload_not_logged(
+    sample_payload, no_retry_sleep, caplog
+):
+    import httpx
+
+    request = httpx.Request("POST", "https://example.test/solana/register")
+    response = httpx.Response(
+        422,
+        request=request,
+        json={"detail": [{"loc": ["body", "email"], "input": sample_payload["email"]}]},
+    )
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_returning(response),
+    ):
+        with pytest.raises(CertificatesOnSolanaException) as exc:
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert exc.value.stage == "http_status"
+    assert "body=<omitted: content-type=application/json" in caplog.text
+    assert sample_payload["email"] not in caplog.text
+
+
+def test_register_certificate_5xx_body_logged(sample_payload, no_retry_sleep, caplog):
+    import httpx
+
+    request = httpx.Request("POST", "https://example.test/solana/register")
+    response = httpx.Response(503, request=request, text="solana rpc unavailable")
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_returning(response),
+    ):
+        with pytest.raises(CertificatesOnSolanaException):
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert "body=solana rpc unavailable" in caplog.text
+
+
+def test_register_certificate_non_json_2xx_is_response_parse(
+    sample_payload, no_retry_sleep, caplog
+):
+    import httpx
+
+    request = httpx.Request("POST", "https://example.test/solana/register")
+    response = httpx.Response(200, request=request, text="<html>not json</html>")
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_returning(response),
+    ):
+        with pytest.raises(CertificatesOnSolanaException) as exc:
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert exc.value.stage == "response_parse"
+    assert "StopIteration" not in caplog.text

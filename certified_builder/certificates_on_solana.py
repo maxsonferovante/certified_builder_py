@@ -68,6 +68,23 @@ def _describe_chain(exc: BaseException) -> str:
     )
 
 
+def _loggable_body(response) -> str | None:
+    """Response body safe to log.
+
+    Other 4xx responses (400, 422...) may echo the request payload, which
+    carries the participant's name and email, so only their shape is logged.
+    """
+    if response is None:
+        return None
+    status = response.status_code
+    if status >= 500 or status in (401, 403):
+        return response.text[:RESPONSE_BODY_LOG_LIMIT]
+    return (
+        f"<omitted: content-type={response.headers.get('content-type')} "
+        f"length={len(response.content)}>"
+    )
+
+
 class CertificatesOnSolana:
     """
     A class to manage certificates on the Solana blockchain Service."""
@@ -117,7 +134,7 @@ class CertificatesOnSolana:
         except Exception as e:
             stage = _classify_error(e)
             status = getattr(response, "status_code", None)
-            body = response.text[:RESPONSE_BODY_LOG_LIMIT] if response is not None else None
+            body = _loggable_body(response)
             logger.exception(
                 "Error registering certificate on Solana: stage=%s host=%s elapsed_ms=%d "
                 "status=%s certificate_code=%s chain=%s body=%s",

@@ -62,5 +62,5 @@ class CertificatesOnSolana:
                 solana_response = response.json()
                 return solana_response
         except Exception as e:
-            logger.error(f"Error registering certificate on Solana: {str(e)}")
+            logger.exception(f"Error registering certificate on Solana: {str(e)}")
             raise CertificatesOnSolanaException(details=str(e), cause=e)

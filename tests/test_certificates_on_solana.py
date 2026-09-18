@@ -64,7 +64,9 @@ def test_register_certificate_success(sample_payload, monkeypatch):
         assert call_kwargs["json"] == sample_payload
 
 
-def test_register_certificate_http_error_raises(sample_payload, monkeypatch):
+def test_register_certificate_http_error_raises(
+    sample_payload, monkeypatch, no_retry_sleep
+):
     monkeypatch.setattr(
         module_under_test.config,
         "SERVICE_URL_REGISTRATION_API_SOLANA",
@@ -219,3 +221,22 @@ def test_register_certificate_5xx_body_logged(sample_payload, no_retry_sleep, ca
             CertificatesOnSolana.register_certificate_on_solana(sample_payload)
 
     assert "body=solana rpc unavailable" in caplog.text
+
+
+def test_register_certificate_non_json_2xx_is_response_parse(
+    sample_payload, no_retry_sleep, caplog
+):
+    import httpx
+
+    request = httpx.Request("POST", "https://example.test/solana/register")
+    response = httpx.Response(200, request=request, text="<html>not json</html>")
+
+    with patch(
+        "certified_builder.certificates_on_solana.httpx.Client",
+        return_value=_client_returning(response),
+    ):
+        with pytest.raises(CertificatesOnSolanaException) as exc:
+            CertificatesOnSolana.register_certificate_on_solana(sample_payload)
+
+    assert exc.value.stage == "response_parse"
+    assert "StopIteration" not in caplog.text

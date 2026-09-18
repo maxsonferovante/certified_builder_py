@@ -31,11 +31,19 @@ class CertificatesOnSolanaException(Exception):
 
 
 def _exception_chain(exc: BaseException) -> list:
-    """Return exc followed by its __cause__/__context__ chain."""
+    """Return exc followed by its __cause__/__context__ chain.
+
+    Stops at context hidden with `raise ... from None`, as tracebacks do.
+    """
     chain = []
     while exc is not None and exc not in chain:
         chain.append(exc)
-        exc = exc.__cause__ or exc.__context__
+        if exc.__cause__ is not None:
+            exc = exc.__cause__
+        elif exc.__suppress_context__:
+            exc = None
+        else:
+            exc = exc.__context__
     return chain
 
 
